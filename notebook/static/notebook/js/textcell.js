@@ -25,6 +25,8 @@ define([
     ipgfm
     ) {
     "use strict";
+    function encodeURIandParens(uri){return encodeURI(uri).replace('(','%28').replace(')','%29')}
+
     var Cell = cell.Cell;
 
     var TextCell = function (options) {
@@ -56,7 +58,7 @@ define([
         // we cannot put this as a class key as it has handle to "this".
         var config = utils.mergeopt(TextCell, this.config);
         Cell.apply(this, [{
-                    config: config, 
+                    config: options.config, 
                     keyboard_manager: options.keyboard_manager, 
                     events: this.events}]);
 
@@ -245,9 +247,9 @@ define([
                 marked(text, function (err, html) {
                     html = security.sanitize_html(html);
                     html = $($.parseHTML(html));
-                    html.find('img[src^="attachment:"]').each(function (i, h) {
+                    html.find('img[src^="attachment://"]').each(function (i, h) {
                         h = $(h);
-                        var key = h.attr('src').replace(/^attachment:/, '');
+                        var key = h.attr('src').replace(/^attachment:\/\//, '');
                         if (key in that.attachments) {
                             data.attachments[key] = JSON.parse(JSON.stringify(
                                 that.attachments[key]));
@@ -280,7 +282,7 @@ define([
         var config = utils.mergeopt(MarkdownCell, {});
         this.class_config = new configmod.ConfigWithDefaults(options.config,
                                             {}, 'MarkdownCell');
-        TextCell.apply(this, [$.extend({}, options, {config: config})]);
+        TextCell.apply(this, [$.extend({}, options, {config: options.config})]);
 
         this.cell_type = 'markdown';
 
@@ -344,7 +346,7 @@ define([
         // We generate names for blobs
         var key;
         if (blob.name !== undefined) {
-            key = blob.name;
+            key = encodeURIandParens(blob.name);
         } else {
             key = '_auto_' + Object.keys(that.attachments).length;
         }
@@ -357,7 +359,7 @@ define([
                             'type (' + d[0] + ')');
             }
             that.add_attachment(key, blob.type, d[1]);
-            var img_md = '![attachment:' + key + '](attachment:' + key + ')';
+            var img_md = '![' + key + '](attachment://' + key + ')';
             that.code_mirror.replaceRange(img_md, pos);
         }
         reader.readAsDataURL(blob);
@@ -404,9 +406,9 @@ define([
                 html.find("a[href]").not('[href^="#"]').attr("target", "_blank");
                 // replace attachment:<key> by the corresponding entry
                 // in the cell's attachments
-                html.find('img[src^="attachment:"]').each(function (i, h) {
+                html.find('img[src^="attachment://"]').each(function (i, h) {
                   h = $(h);
-                  var key = h.attr('src').replace(/^attachment:/, '');
+                  var key = h.attr('src').replace(/^attachment:\/\//, '');
 
                   if (key in that.attachments) {
                     var att = that.attachments[key];
@@ -526,7 +528,7 @@ define([
          */
         options = options || {};
         var config = utils.mergeopt(RawCell, {});
-        TextCell.apply(this, [$.extend({}, options, {config: config})]);
+        TextCell.apply(this, [$.extend({}, options, {config: options.config})]);
 
         this.class_config = new configmod.ConfigWithDefaults(options.config,
                                             RawCell.config_defaults, 'RawCell');
